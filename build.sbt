@@ -52,7 +52,8 @@ addCompilerPlugin("com.lihaoyi" %% "acyclic" % "0.1.2")//,
 lazy val supplies = crossProject.
   settings(commonSettings: _*).
   settings(
-    name := "supplies"
+    name := "supplies",
+    libraryDependencies += "com.lihaoyi" %%% "fastparse" % "0.3.4"
   )
 val suppliesJS = supplies.js
 val suppliesJVM= supplies.jvm
@@ -79,11 +80,11 @@ lazy val diesel = crossProject.
 val dieselJS = diesel.js
 val dieselJVM= diesel.jvm
 
-/*lazy val upickleReadme= scalatex.ScalatexReadme(
-  projectId = "upickleReadme",
+lazy val upickleReadme= scalatex.ScalatexReadme(
+  projectId = "suppliesReadme",
   wd = file(""),
-  url = "https://github.com/lihaoyi/upickle/tree/master",
+  url = "https://github.com/mrmechko/scalatrips/tree/master",
   source = "Readme"
 ).settings(
   (unmanagedSources in Compile) += baseDirectory.value/".."/"project"/"repo.scala"
-)*/
+)
