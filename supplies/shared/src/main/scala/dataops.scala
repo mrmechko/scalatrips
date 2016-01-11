@@ -45,7 +45,7 @@ trait stringtransforms {
 
 trait TransformData extends stringtransforms {
   val pipeline : List[stringtransforms]
-  def transform(content : String) : String = pipeline.foldLeft(content)((a, b) => b.clean(a))
+  def transform(content : String) : String = pipeline.foldLeft(content)((a, b) => b.transform(a))
   val operation : String = pipeline.map(_.operation).mkString(" -> ")
 }
 
