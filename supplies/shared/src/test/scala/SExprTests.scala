@@ -44,6 +44,7 @@ object SexprTests extends TestSuite {
           "a string"      - testValue(parser.string, "\"i am a cow lol omfg\"", ast.Str("i am a cow lol omfg"))
           "empty"         - testValue(parser.string, "\"\"", ast.Str(""))
           "with escapes"  - testValue(parser.string, "\"escapee: \\\"\"", ast.Str("escapee: \\\""))
+          "multiline"     - testValue(parser.string, "\"linebreak: \nbroke\"", ast.Str("linebreak: \nbroke"))
           'notString {
             "number"    - failTest(parser.string, "2.2")
             "symbol"    - failTest(parser.string, "'some")
@@ -56,6 +57,9 @@ object SexprTests extends TestSuite {
           "just a var"    - testValue(parser.variable, "variable", ast.Var("variable"))
           "with numbers"  - testValue(parser.variable, "variable2", ast.Var("variable2"))
           "with scope"    - testValue(parser.variable, "hey::renegade", ast.Var("hey::renegade"))
+          "multiline"     - testValue(parser.variable, "multiline", ast.Var("multiline"))
+          "long name"     - testValue(parser.variable, "longvariablename", ast.Var("longvariablename"))
+          "mstart"        - testValue(parser.variable, "ma", ast.Var("ma"))
           'notVar {
             "actually a key"    - failTest(parser.variable, ":key")
             "actually a lst"    - failTest(parser.variable, "(variable)")
@@ -67,12 +71,6 @@ object SexprTests extends TestSuite {
       }
 
       'exprs {
-        'Kv {
-          "nil"       - testValue(parser.kv, ":key ()", ast.Kv(("key", ast.Lst())))
-          "lst"       - testValue(parser.kv, ":key (variable 1)", ast.Kv(("key", ast.Lst(ast.Var("variable"), ast.Num(1)))))
-          "symbol"    - testValue(parser.kv, ":key 'symbol", ast.Kv(("key", ast.Sym("symbol"))))//Key-symbol fails
-          "int"       - testValue(parser.kv, ":key 2", ast.Kv(("key", ast.Num(2))))
-        }
         'lst {
             "nil"       - testValue(parser.lst, "()", ast.Lst())
             "single"    - testValue(parser.lst, "(1)", ast.Lst(ast.Num(1)))
@@ -87,17 +85,72 @@ object SexprTests extends TestSuite {
 
       'parser {
         'atoms {
-          "number"    - testValue(parser.sExpr, "1", ast.Num(1))
-          "string"    - testValue(parser.sExpr, "\"string\"", ast.Str("string"))
-          "symbol"    - testValue(parser.sExpr, "'symbol", ast.Sym("symbol"))
-          "variable"  - testValue(parser.sExpr, "variable", ast.Var("variable"))
+          "number"    - testValue(parser.parse, "1", ast.Num(1))
+          "string"    - testValue(parser.parse, "\"string\"", ast.Str("string"))
+          "symbol"    - testValue(parser.parse, "'symbol", ast.Sym("symbol"))
+          "variable"  - testValue(parser.parse, "variable", ast.Var("variable"))
         }
 
         'sexp {
-          "number"    - testValue(parser.sExpr, "(fn 1)", ast.Lst(ast.Var("fn"), ast.Num(1)))
-          "string"    - testValue(parser.sExpr, "(fn \"string\")", ast.Lst(ast.Var("fn"), ast.Str("string")))
-          "symbol"    - testValue(parser.sExpr, "(fn 'symbol)", ast.Lst(ast.Var("fn"),ast.Sym("symbol")))
-          "variable"  - testValue(parser.sExpr, "(fn variable)", ast.Lst(ast.Var("fn"),ast.Var("variable")))
+          "number"    - testValue(parser.parse, "(fn 1)", ast.Lst(ast.Var("fn"), ast.Num(1)))
+          "string"    - testValue(parser.parse, "(fn \"string\")", ast.Lst(ast.Var("fn"), ast.Str("string")))
+          "symbol"    - testValue(parser.parse, "(fn 'symbol)", ast.Lst(ast.Var("fn"),ast.Sym("symbol")))
+          "variable"  - testValue(parser.parse, "(fn variable)", ast.Lst(ast.Var("fn"),ast.Var("variable")))
+        }
+
+        'weird { //Tests to find and fix the strange variable-name error
+          "working"  - test(parser.parse, "(fn variable)")
+          "failing"  - test(parser.parse, "(some multiline)")//, ast.Lst(ast.Var("some"), ast.Var("multiline"), ast.Var("expression")))
+          "combo-1"  - test(parser.parse, "(fn multiline)")
+          "combo-2"  - test(parser.parse, "(some variable)")
+          "combo-3"  - test(parser.parse, "(some variable multiline)")
+        }
+
+        'multiline {
+          "singleLine"  - test(parser.parse, "(some multiline)")//, ast.Lst(ast.Var("some"), ast.Var("multiline"), ast.Var("expression")))
+
+          "simple"  - testValue(parser.parse,
+            """
+            |(some
+            |  multiline
+            |expression)""".stripMargin, ast.Lst(ast.Var("some"), ast.Var("multiline"), ast.Var("expression")))
+        }
+
+        'inlinecomments {
+          'atoms {
+            "number"    - testValue(parser.parse, "1 ;comment", ast.Num(1))
+            "string"    - testValue(parser.parse, "\"string\";comment", ast.Str("string"))
+            "strcomment"- testValue(parser.parse, "\"string;comment\"", ast.Str("string;comment"))
+            "symbol"    - testValue(parser.parse, "'symbol ;comment", ast.Sym("symbol"))
+            "variable"  - testValue(parser.parse, "variable ;comment", ast.Var("variable"))
+          }
+          "line end comments" - testValue(parser.parse, "(fn variable) ;a comment", ast.Lst(ast.Var("fn"), ast.Var("variable")))
+          "interspersed ml"   - testValue(parser.parse,
+            """
+            |(some ;;comment
+            |  multiline ;;comments
+            |expression)""".stripMargin, ast.Lst(ast.Var("some"), ast.Var("multiline"), ast.Var("expression")))
+        }
+
+        'blockcomments {
+          * - assert(true)
+        }
+      }
+
+      'unpack {
+        'str {
+          * - assert(unpack.string(ast.Str("some")) == Some("some"))
+          * - assert(unpack.string(ast.Var("some")) == None)
+        }
+        'dsl {
+          * - assert(unpack.string(ast.Str("some")) == Some("some"))
+          * - assert(unpack.double(ast.Str("some")) == None)
+          * - assert(unpack.double(ast.Num(1)) == Some(1.0))
+          * - println(unpack.list(ast.Lst(ast.Str("some"), ast.Str("thing"))))
+          val a = unpack.list(ast.Lst(ast.Str("some"), ast.Str("thing")))
+          val b = Some(List(ast.Str("some"), ast.Str("thing")))
+          * - assert(a == b)
+          * - assert(unpack.listString(ast.Lst(ast.Str("some"), ast.Str("thing"))) == Some(List("some", "thing")))
         }
       }
 

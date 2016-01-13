@@ -7,6 +7,50 @@ package supplies
 */
 
 package object sexpr {
+  object unpack {
+      class read[T](reader0 : ast.Expr => Option[T]) {
+        def apply(exp : ast.Expr) : Option[T] = reader0(exp)
+      }
+
+      val string = new read[String](
+        _ match {
+          case ast.Str(value) => Some(value)
+          case _ => None
+        }
+      )
+
+      val double = new read[Double](
+        _ match {
+          case ast.Num(value) => Some(value)
+          case _ => None
+        }
+      )
+
+      val list = new read[List[ast.Expr]](
+        _ match {
+          case e : ast.Lst => Some(e.elements.toList)
+          case _ => None
+        }
+      )
+
+      val listString = new read[List[String]](
+        a => {
+          list(a) match {
+            case Some(e : List[ast.Expr]) => {
+              val l = e.map(string(_))
+              if(l.forall(_.isDefined)) Some(l.flatten)
+              else None
+            }
+            case _ => None
+          }
+        }
+      )
+
+      /*case class SList(l : List[ast.Expr]) {
+        def get[T](reader : ast.Expr => T)
+      }*/
+  }
+
   object ast {
 
     sealed trait Expr extends Any {
@@ -22,9 +66,13 @@ package object sexpr {
     /**
     * Compound Exprs
     */
-    case class Lst(value :  (Expr)*) extends AnyVal with Expr
+    case class Lst(value :  (Expr)*) extends AnyVal with Expr {
+      def elements : Seq[Expr] = value
+    }
     // Is there any case in which its reasonable for there to be a non-Kv after a Kv?
-    case class Kv(value : (java.lang.String, Expr)) extends AnyVal with Expr
+    case class Key(value : java.lang.String) extends AnyVal with Atom {
+      def asVar = Var(value)
+    }
 
     /**
     * Atomic Expressions
@@ -49,15 +97,19 @@ package object sexpr {
 
   object parser {
     import fastparse.all._
-    val reserved = "\"\\ \n\t()#[],{}?!'*;"
+    val reserved = "\"\\ \n\t()#[],{}?!'*;|"
 
-    val Whitespace = NamedFunction(" \n".contains(_: Char), "Whitespace")
+    val Whitespace = NamedFunction(" \t\n".contains(_: Char), "Whitespace")
     val Digits = NamedFunction('0' to '9' contains (_: Char), "Digits")
     val StringChars = NamedFunction(!"\"\\".contains(_: Char), "StringChars")
     val TokenChars = NamedFunction(!reserved.contains(_: Char), "TokenChars")//is this a regex?
-    val TokenStart = NamedFunction(!(reserved+":" + ('0' to '9')).contains(_: Char), "TokenStart")
+    val TokenStart = NamedFunction(!(reserved+":" + ("0123456789")).contains(_: Char), "TokenStart")
 
-    val space         = P( CharsWhile(Whitespace).? )
+    val inlineComment = P( ";" ~ CharsWhile(!"\n".contains(_:Char)))
+    val hashpipe      = P( "#|")
+    val pipehash      = P( "|#" )
+    //val hpcomment     = //how to make this minimal?
+    val space         = P( (CharsWhile(Whitespace) | inlineComment).rep )
     val SPACE         = P( CharsWhile(Whitespace).! )
     val digits        = P( CharsWhile(Digits))
     val exponent      = P( CharIn("eE") ~ CharIn("+-").? ~ digits )
@@ -84,23 +136,20 @@ package object sexpr {
     val variable =
       P( space ~ tokenStart.rep(1).! ~ (tokenChars).rep.!).map(s => ast.Var(s._1 + s._2)) //make sure the first element is not a restricted char
 
-    val kv = P( space ~ ":"~variable.map(_.value) ~/ sExpr ).map(s => ast.Kv((s._1, s._2)))
+    val key = P( space ~ ":"~variable.map(_.value)).map(ast.Key)
 
-    val lst = P( space ~ "(" ~/ sExpr.rep(sep = space) ~ ")" ).map(s => {
-      println(s)
+    val lst = P( space ~ "(" ~/ sExpr.rep(sep = space) ~ ")" ~ space ).map(s => {
       ast.Lst(s :_*)
     })
 
     val atom: P[ast.Atom] = P(
-      (string | number | variable | symbol)
+      (string | number | variable | symbol | key)
     )
 
     val sExpr: P[ast.Expr] = P(
-      space ~ (NoCut(kv) | NoCut(lst) | atom) ~ space
+      space ~ (NoCut(lst) | atom) ~ space
     )
 
-    val parse: P[ast.Expr] = P(
-      space ~ (atom | "("~ sExpr ~")")
-    )
+    val parse: P[ast.Expr] = atom | lst //not necessary
   }
 }
