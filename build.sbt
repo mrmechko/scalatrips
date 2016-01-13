@@ -9,23 +9,23 @@ lazy val commonSettings = Seq(
   "-encoding", "utf8",
   "-feature"),
 // Sonatype
-publishArtifact in Test := false,
+  publishArtifact in Test := false,
 /*publishTo <<= version { (v: String) =>
   Some("releases"  at "https://oss.sonatype.org/service/local/staging/deploy/maven2")
 },*/
-testFrameworks += new TestFramework("utest.runner.Framework"),
-libraryDependencies ++= Seq(
-  "com.lihaoyi" %% "acyclic" % "0.1.2" % "provided",
-  "com.lihaoyi" %%% "utest" % "0.3.1" % "test",
-  "org.scala-lang" % "scala-reflect" % scalaVersion.value % "provided",
-  "org.scala-lang" % "scala-compiler" % scalaVersion.value % "provided"
-),
-unmanagedSourceDirectories in Compile ++= Seq(baseDirectory.value / ".."/"shared" / "src"/"main" / "scala-2.11"),
+  testFrameworks += new TestFramework("utest.runner.Framework"),
+  libraryDependencies ++= Seq(
+    "com.lihaoyi" %% "acyclic" % "0.1.2" % "provided",
+    "com.lihaoyi" %%% "utest" % "0.3.1" % "test",
+    "org.scala-lang" % "scala-reflect" % scalaVersion.value % "provided",
+    "org.scala-lang" % "scala-compiler" % scalaVersion.value % "provided"
+  ),
+  unmanagedSourceDirectories in Compile ++= Seq(baseDirectory.value / ".."/"shared" / "src"/"main" / "scala-2.11"),
 
-scalaJSStage in Global := FastOptStage,
-autoCompilerPlugins := true,
+  scalaJSStage in Global := FastOptStage,
+  autoCompilerPlugins := true,
 //  scalacOptions += "-Xlog-implicits",
-addCompilerPlugin("com.lihaoyi" %% "acyclic" % "0.1.2")//,
+  addCompilerPlugin("com.lihaoyi" %% "acyclic" % "0.1.2")//,
 /*
   pomExtra :=
   <url>https://github.com/lihaoyi/upickle</url>
