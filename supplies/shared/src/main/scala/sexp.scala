@@ -7,6 +7,36 @@ package supplies
 */
 
 package object sexpr {
+
+  /**
+   * These are some simple matchers.  If you need to debug your files or do any
+   * error checking, you should call parser.parseAll.parse.  I'll rename that
+   * soon
+   */
+  case object slist {
+    /**
+     * Succeeds only if the entire String is parsed
+     * @param data :             String
+     * @return a seq of expressions
+     */
+    def apply(data : String) : Option[Seq[ast.Expr]] = parser.parseAll.parse(data) match {
+      case fastparse.all.Parsed.Success(v, i) if i == data.size => Some(v)
+      case _ => None
+    }
+  }
+
+  /**
+   * Succeeds only if the entire String is parsed
+   * @param data :             String
+   * @return an expression
+   */
+  case object sone {
+    def apply(data : String) : Option[ast.Expr] = parser.parse.parse(data) match {
+      case fastparse.all.Parsed.Success(v, i) if i == data.size => Some(v)
+      case _ => None
+    }
+  }
+
   object unpack {
       class read[T](reader0 : ast.Expr => Option[T]) {
         def apply(exp : ast.Expr) : Option[T] = reader0(exp)
@@ -45,36 +75,6 @@ package object sexpr {
           }
         }
       )
-
-      abstract class TypedSReader[T](l : Seq[ast.Expr]) {
-        /**
-         * Number of positional arguments expected (not including keyvals)
-         * @type Int
-         */
-        def positionals : Int
-
-        def ordered : Seq[ast.Expr] = l.take(positionals)
-        def hashed  : Map[ast.Expr, ast.Expr]
-          = l.drop(positionals).grouped(2).map(a => a(0) -> a(1)).toMap
-
-        def apply : Option[T]
-      }
-
-      abstract class ScopedData(scope : String) {}
-
-      case class OntDefineType(name : String, data : Map[String, ast.Expr]) extends ScopedData("ont")
-
-      class OntDefineTypeReader(l : Seq[ast.Expr]) extends TypedSReader[OntDefineType](l) {
-        override def positionals : Int = 2
-        override def apply : Option[OntDefineType] = {
-          ordered match {
-            case ast.Var("define-type") :: ast.Var(t) :: Nil => {
-              Some(OntDefineType(t, hashed.map(a => a._1.asInstanceOf[ast.Key].asVar.value -> a._2)))
-            }
-            case _ => None
-          }
-        }
-      }
 
 
   }
@@ -138,9 +138,9 @@ val strChars = P( CharsWhile(StringChars) )
 
     val inlineComment = P( ";" ~/ CharsWhile(!"\n".contains(_:Char)) ~/ "\n")
     val hashpipe      = P( "#|")
-    val hpcontent     = (!"|#" ~ AnyChar)
     val pipehash      = P( "|#" )
-    val hpcomment     = hashpipe ~ hpcontent.rep ~ pipehash
+    val hpcontent : P[Unit]     = P( (&("#|") ~ hpcomment) | (!"|#" ~ AnyChar) )
+    val hpcomment : P[Unit]     = P( hashpipe ~ (hpcontent).rep ~ pipehash )
     val space         = P( (CharsWhile(Whitespace) | NoCut(inlineComment) | NoCut(hpcomment)).rep )
     val SPACE         = P( CharsWhile(Whitespace).! )
     val digits        = P( CharsWhile(Digits))

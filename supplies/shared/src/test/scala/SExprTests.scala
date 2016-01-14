@@ -151,6 +151,8 @@ object SexprTests extends TestSuite {
         "simplePipe2b" - test(parser.space, "#| asdfsdf |#")
         "simplePipe3c" - test(parser.space, "#| \nasdfsf\n |#")
 
+        "nestedhp"     - test(parser.space, "#|#|||#|#")
+
 
         "hashPipes?" - test(parser.parse, """
           | (some
