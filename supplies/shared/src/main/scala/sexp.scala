@@ -20,7 +20,7 @@ package object sexpr {
      * @return a seq of expressions
      */
     def apply(data : String) : Option[Seq[ast.Expr]] = parser.parseAll.parse(data) match {
-      case fastparse.all.Parsed.Success(v, i) if i == data.size => Some(v)
+      case fastparse.all.Parsed.Success(v, i) => Some(v)
       case _ => None
     }
   }
@@ -136,7 +136,7 @@ package object sexpr {
 
 val strChars = P( CharsWhile(StringChars) )
 
-    val inlineComment = P( ";" ~/ CharsWhile(!"\n".contains(_:Char)) ~/ "\n")
+    val inlineComment = P( ";" ~ (!"\n" ~/ AnyChar).rep ~/ "\n")
     val hashpipe      = P( "#|")
     val pipehash      = P( "|#" )
     val hpcontent : P[Unit]     = P( (&("#|") ~ hpcomment) | (!"|#" ~ AnyChar) )
