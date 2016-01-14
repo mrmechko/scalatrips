@@ -92,6 +92,7 @@ object SexprTests extends TestSuite {
         }
 
         'sexp {
+          "nil"       - testValue(parser.parse, "()", ast.Lst())
           "number"    - testValue(parser.parse, "(fn 1)", ast.Lst(ast.Var("fn"), ast.Num(1)))
           "string"    - testValue(parser.parse, "(fn \"string\")", ast.Lst(ast.Var("fn"), ast.Str("string")))
           "symbol"    - testValue(parser.parse, "(fn 'symbol)", ast.Lst(ast.Var("fn"),ast.Sym("symbol")))
@@ -128,8 +129,35 @@ object SexprTests extends TestSuite {
           "interspersed ml"   - testValue(parser.parse,
             """
             |(some ;;comment
-            |  multiline ;;comments
+            |  multiline ;;comments ;;nested comment with a paren )
             |expression)""".stripMargin, ast.Lst(ast.Var("some"), ast.Var("multiline"), ast.Var("expression")))
+
+          "problematic trips" - test(parser.parse,
+            """(define-type ONT::situation-root
+   :parent ont::referential-sem
+   :comment "root for all events, whether verbal or nominal"
+   :sem (F::Situation (F::Intentional -) (F::information F::mental-construct) (F::container -))
+   :arguments (;;(:optional ont::arg0)  ;; abstract role for robust processing
+         ;;(:optional ont::arg1)   ;; abstract role for robust processing
+ ;       (:optional ont::norole)
+         )
+   )""")
+
+        "simplePipe1" - test(parser.hpcomment, "#||#")
+        "simplePipe2" - test(parser.hpcomment, "#| asdfsdf |#")
+        "simplePipe3" - test(parser.hpcomment, "#| \nasdfsf\n |#")
+
+        "simplePipe1a" - test(parser.space, "#||#")
+        "simplePipe2b" - test(parser.space, "#| asdfsdf |#")
+        "simplePipe3c" - test(parser.space, "#| \nasdfsf\n |#")
+
+
+        "hashPipes?" - test(parser.parse, """
+          | (some
+          | #|)
+          | |#
+          | )
+          | """.stripMargin)
         }
 
         'blockcomments {

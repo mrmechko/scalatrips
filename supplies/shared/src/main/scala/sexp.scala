@@ -46,9 +46,37 @@ package object sexpr {
         }
       )
 
-      /*case class SList(l : List[ast.Expr]) {
-        def get[T](reader : ast.Expr => T)
-      }*/
+      abstract class TypedSReader[T](l : Seq[ast.Expr]) {
+        /**
+         * Number of positional arguments expected (not including keyvals)
+         * @type Int
+         */
+        def positionals : Int
+
+        def ordered : Seq[ast.Expr] = l.take(positionals)
+        def hashed  : Map[ast.Expr, ast.Expr]
+          = l.drop(positionals).grouped(2).map(a => a(0) -> a(1)).toMap
+
+        def apply : Option[T]
+      }
+
+      abstract class ScopedData(scope : String) {}
+
+      case class OntDefineType(name : String, data : Map[String, ast.Expr]) extends ScopedData("ont")
+
+      class OntDefineTypeReader(l : Seq[ast.Expr]) extends TypedSReader[OntDefineType](l) {
+        override def positionals : Int = 2
+        override def apply : Option[OntDefineType] = {
+          ordered match {
+            case ast.Var("define-type") :: ast.Var(t) :: Nil => {
+              Some(OntDefineType(t, hashed.map(a => a._1.asInstanceOf[ast.Key].asVar.value -> a._2)))
+            }
+            case _ => None
+          }
+        }
+      }
+
+
   }
 
   object ast {
@@ -97,7 +125,8 @@ package object sexpr {
 
   object parser {
     import fastparse.all._
-    val reserved = "\"\\ \n\t()#[],{}?!'*;|"
+    val reserved = "\"\\ \n\t()#[],{}!'*;|"
+    val symbolOp = "+-*^&%!><?\\"
 
     val Whitespace = NamedFunction(" \t\n".contains(_: Char), "Whitespace")
     val Digits = NamedFunction('0' to '9' contains (_: Char), "Digits")
@@ -105,11 +134,14 @@ package object sexpr {
     val TokenChars = NamedFunction(!reserved.contains(_: Char), "TokenChars")//is this a regex?
     val TokenStart = NamedFunction(!(reserved+":" + ("0123456789")).contains(_: Char), "TokenStart")
 
-    val inlineComment = P( ";" ~ CharsWhile(!"\n".contains(_:Char)))
+val strChars = P( CharsWhile(StringChars) )
+
+    val inlineComment = P( ";" ~/ CharsWhile(!"\n".contains(_:Char)) ~/ "\n")
     val hashpipe      = P( "#|")
+    val hpcontent     = (!"|#" ~ AnyChar)
     val pipehash      = P( "|#" )
-    //val hpcomment     = //how to make this minimal?
-    val space         = P( (CharsWhile(Whitespace) | inlineComment).rep )
+    val hpcomment     = hashpipe ~ hpcontent.rep ~ pipehash
+    val space         = P( (CharsWhile(Whitespace) | NoCut(inlineComment) | NoCut(hpcomment)).rep )
     val SPACE         = P( CharsWhile(Whitespace).! )
     val digits        = P( CharsWhile(Digits))
     val exponent      = P( CharIn("eE") ~ CharIn("+-").? ~ digits )
@@ -124,7 +156,7 @@ package object sexpr {
     val unicodeEscape = P( "u" ~ hexDigit ~ hexDigit ~ hexDigit ~ hexDigit )
     val escape        = P( "\\" ~ (CharIn("\"/\\bfnrt") | unicodeEscape) )
 
-    val strChars = P( CharsWhile(StringChars) )
+
     val tokenChars = P( CharsWhile(TokenChars) ) //Tokens should probably start with a letter of some sort?
     val tokenStart = P( CharsWhile(TokenStart) )
     val string =
@@ -138,7 +170,7 @@ package object sexpr {
 
     val key = P( space ~ ":"~variable.map(_.value)).map(ast.Key)
 
-    val lst = P( space ~ "(" ~/ sExpr.rep(sep = space) ~ ")" ~ space ).map(s => {
+    val lst = P( space ~ "(" ~ sExpr.rep(sep = space) ~ space ~ ")" ~ space ).map(s => {
       ast.Lst(s :_*)
     })
 
@@ -150,6 +182,8 @@ package object sexpr {
       space ~ (NoCut(lst) | atom) ~ space
     )
 
-    val parse: P[ast.Expr] = atom | lst //not necessary
+    val parse: P[ast.Expr] = space ~ (atom | NoCut(lst)) ~ space//not necessary
+
+    val parseAll : P[Seq[ast.Expr]] = P( space ~ parse.rep(sep=space) ~ space )//.map(x => List(x :_* ))
   }
 }
