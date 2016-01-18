@@ -181,19 +181,6 @@ object SexprTests extends TestSuite {
           val b = Some(List(ast.Str("some"), ast.Str("thing")))
           * - assert(a == b)
           * - assert(unpack.listString(ast.Lst(ast.Str("some"), ast.Str("thing"))) == Some(List("some", "thing")))
-          'load {
-            //* - slist(scala.io.Source.fromInputStream(getClass.getResourceAsStream("/test.lisp")).getLines.mkString).map(_.size)
-            val text = scala.io.Source.fromFile("/Users/mechko/Projects/NLP/Trips/parser/src/OntologyManager/Data/LFdata/root-types.lisp").getLines.mkString("\n")
-            val loaded = supplies.sexpr.parser.parseAll.parse(
-              text
-            ).get
-
-            val size = loaded.value.size
-            "loaded" - loaded.value.last
-            "index" - loaded.index
-            //"whatelse" - text.drop(loaded.index)
-            "all" - assert(size == 23)
-          }
         }
       }
 

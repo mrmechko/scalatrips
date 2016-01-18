@@ -32,7 +32,7 @@
  )
 
 (define-type ONT::situation-root
-  :parent ont::referential-sem 
+  :parent ont::referential-sem
   :comment "root for all events, whether verbal or nominal"
   :sem (F::Situation (F::Intentional -) (F::information F::mental-construct) (F::container -))
   :arguments (;;(:optional ont::arg0)  ;; abstract role for robust processing
@@ -41,7 +41,7 @@
 	      )
   )
 
-(define-type ont::event-of-change 
+(define-type ont::event-of-change
      :parent ONT::SITUATION-ROOT
      :comment "Events that involve change or force: should ahve an AGENT or AFFECTED role"
      :arguments ((:optional  ONT::agent ((? cau2 F::situation F::Abstr-obj f::phys-obj)))
@@ -57,13 +57,13 @@
      :arguments ((:essential ONT::neutral (f::situation (F::aspect F::dynamic))))
      :sem (F::Situation (F::aspect F::dynamic)))
 
-(define-type ont::event-of-action 
+(define-type ont::event-of-action
      :parent ONT::event-of-change
      :comment "events that involve :agent (whether intentional or not)"
      :sem (F::Situation (F::cause F::force))
      :arguments ((:essential ONT::agent ((? cau2 F::situation F::Abstr-obj f::phys-obj)))))
 
-#||(define-type ont::event-of-agent-interaction 
+#||(define-type ont::event-of-agent-interaction
      :parent ONT::event-of-action
      :comment "events that involve the interaction between more than one agent (whether intentional or not)"
      :sem (F::Situation)
@@ -73,7 +73,7 @@
 (define-type ont::event-of-awareness
      :parent ONT::event-of-change
      :comment "Events involving changing or mental state or awareness"
-     :sem (F::Situation) 
+     :sem (F::Situation)
      :arguments ((:essential ONT::formal ((? cau4 F::situation F::Abstr-obj)))))
 
 
@@ -83,7 +83,7 @@
      :sem (F::Situation)
      :arguments ((:essential ONT::affected  ((? aff F::Abstr-obj f::phys-obj f::situation)))))
 
-(define-type ont::event-of-causation 
+(define-type ont::event-of-causation
      :parent ONT::event-of-action
      :comment "events involving an AGENT acting on an AFFECTED"
      :sem (F::Situation)
@@ -98,7 +98,7 @@
 		 (:optional ONT::affected-result ((? neu F::situation F::Abstr-obj f::phys-obj))))
      )
 
-(define-type ont::event-of-state 
+(define-type ont::event-of-state
      :parent ONT::SITUATION-ROOT
      :sem (F::Situation (F::aspect f::static))
      :comment "Events describing a state of affairs holding"
