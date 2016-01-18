@@ -13,7 +13,7 @@ object StripsOntReaderTests extends TestSuite {
       'load {
         * - slist(scala.io.Source.fromInputStream(getClass.getResourceAsStream("/test.lisp")).getLines.mkString("\n")).map(_.size)
         * - supplies.sexpr.parser.parseAll.parse(
-          scala.io.Source.fromFile("/Users/mechko/Projects/NLP/Trips/parser/src/OntologyManager/Data/LFdata/root-types.lisp").getLines.mkString("\n")
+          scala.io.Source.fromInputStream(getClass.getResourceAsStream("/test.lisp")).getLines.mkString("\n")
         ).get.value.size
       }
     }

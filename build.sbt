@@ -20,7 +20,8 @@ lazy val commonSettings = Seq(
     "org.scala-lang" % "scala-reflect" % scalaVersion.value % "provided",
     "org.scala-lang" % "scala-compiler" % scalaVersion.value % "provided"
   ),
-  unmanagedSourceDirectories in Compile ++= Seq(baseDirectory.value / ".."/"shared" / "src"/"main" / "scala-2.11"),
+  unmanagedSourceDirectories in Compile ++= Seq(baseDirectory.value / ".." / "shared" / "src" / "main" / "scala-2.11"),
+  unmanagedResourceDirectories in Test ++= Seq(baseDirectory.value / ".." / ".." / "testfiles"),
 
   scalaJSStage in Global := FastOptStage,
   autoCompilerPlugins := true,
