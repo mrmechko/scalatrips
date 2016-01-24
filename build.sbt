@@ -50,6 +50,16 @@ lazy val commonSettings = Seq(
     */
 )
 
+lazy val badlands = crossProject.
+  settings(commonSettings : _*).
+  settings(
+    name := "badlands",
+    libraryDependencis ++= Seq()
+  )
+
+val badlandsJS = badlands.js
+val badlandsJVM = badlands.jvm
+
 lazy val supplies = crossProject.
   settings(commonSettings: _*).
   settings(
