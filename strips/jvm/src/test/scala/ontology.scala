@@ -16,7 +16,17 @@ object StripsOntReaderTests extends TestSuite {
       ).get.value.size == 23)
 
       'onttype {
-        "convert" - sl.map(_.tail.map(e => (new OntDefineTypeReader(e.asInstanceOf[ast.Lst].value))()))
+        val file = sl.map(_.tail.map(e => (new OntDefineTypeReader(e.asInstanceOf[ast.Lst].value))())).get.collect{case Some(a) => a}
+        "convert" - assert(file.size == 22)
+      }
+
+      'sem {
+        val oneofreader = new SemTypeReader(
+          Seq(ast.Lst(ast.Var("?"), ast.Var("rst"), ast.Var("F::One"), ast.Var("F::Two"))), "test"
+        )
+        val oneofinherits = oneofreader().map(_.inherits)
+        val shouldBe = Some(List(SemInherits("F::One"), SemInherits("F::Two")))
+        * - assert( oneofinherits == shouldBe )
       }
     }
   }
