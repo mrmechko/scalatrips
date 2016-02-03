@@ -16,10 +16,9 @@ lazy val commonSettings = Seq(
   testFrameworks += new TestFramework("utest.runner.Framework"),
   libraryDependencies ++= Seq(
     "com.lihaoyi" %% "acyclic" % "0.1.2" % "provided",
-    "com.lihaoyi" %%% "utest" % "0.3.1" % "test",
-    "org.scala-lang" % "scala-reflect" % scalaVersion.value % "provided",
-    "org.scala-lang" % "scala-compiler" % scalaVersion.value % "provided"
+    "com.lihaoyi" %%% "utest" % "0.3.1" % "test"
   ),
+  libraryDependencies <+= (scalaVersion)("org.scala-lang" % "scala-reflect" % _),
   unmanagedSourceDirectories in Compile ++= Seq(baseDirectory.value / ".." / "shared" / "src" / "main" / "scala-2.11"),
   unmanagedResourceDirectories in Test ++= Seq(baseDirectory.value / ".." / ".." / "testfiles"),
 
@@ -54,7 +53,12 @@ lazy val badlands = crossProject.
   settings(commonSettings : _*).
   settings(
     name := "badlands",
-    libraryDependencis ++= Seq()
+    libraryDependencies ++= Seq(
+      compilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full),
+      "com.github.mpilquist" %%% "simulacrum" % "0.6.1",
+      "org.scala-lang" % "scala-reflect" % scalaVersion.value % "provided",
+      "org.scala-lang" % "scala-compiler" % scalaVersion.value % "provided"
+    )
   )
 
 val badlandsJS = badlands.js
